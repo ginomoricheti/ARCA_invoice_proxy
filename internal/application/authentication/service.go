@@ -3,9 +3,10 @@ package authentication
 import (
 	"context"
 	"errors"
+	"time"
 
 	"arca-invoice-proxy/internal/domain/apikey"
-	"arca-invoice-proxy/internal/domain/errors"
+	apperrors "arca-invoice-proxy/internal/domain/errors"
 )
 
 type APIKeyStore interface {
@@ -31,13 +32,13 @@ func NewService(store APIKeyStore, pepper string) *Service {
 func (s *Service) ValidateAPIKey(ctx context.Context, rawKey string) (*apikey.APIKey, error) {
 	prefix, suffix, err := apikey.ParseAPIKey(rawKey)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.CodeInvalidAPIKey, "invalid api key format")
+		return nil, apperrors.Wrap(err, apperrors.CodeInvalidAPIKey, "invalid api key format")
 	}
 
-	key, err := s.store.GetByPrefixAndSuffix(ctx, prefix, suffix)
+	key, err := s.store.GetByPrefixAndSuffix(ctx, prefix, suffix[len(suffix)-4:])
 	if err != nil {
-		if errors.IsCode(err, errors.CodeNotFound) {
-			return nil, errors.New(errors.CodeInvalidAPIKey, "invalid api key")
+		if apperrors.IsCode(err, apperrors.CodeNotFound) {
+			return nil, apperrors.New(apperrors.CodeInvalidAPIKey, "invalid api key")
 		}
 		return nil, err
 	}
@@ -45,11 +46,11 @@ func (s *Service) ValidateAPIKey(ctx context.Context, rawKey string) (*apikey.AP
 	if err := key.Validate(rawKey, s.pepper); err != nil {
 		switch {
 		case errors.Is(err, apikey.ErrKeyRevoked):
-			return nil, errors.New(errors.CodeAPIKeyRevoked, "api key has been revoked")
+			return nil, apperrors.New(apperrors.CodeAPIKeyRevoked, "api key has been revoked")
 		case errors.Is(err, apikey.ErrKeyExpired):
-			return nil, errors.New(errors.CodeAPIKeyExpired, "api key has expired")
+			return nil, apperrors.New(apperrors.CodeAPIKeyExpired, "api key has expired")
 		default:
-			return nil, errors.New(errors.CodeInvalidAPIKey, "invalid api key")
+			return nil, apperrors.New(apperrors.CodeInvalidAPIKey, "invalid api key")
 		}
 	}
 
@@ -65,11 +66,11 @@ func (s *Service) CreateAPIKey(ctx context.Context, customerID, name, prefix str
 
 	key, rawKey, err := apikey.NewAPIKey(customerID, name, prefix, s.pepper, scopes, exp)
 	if err != nil {
-		return nil, "", errors.Wrap(err, errors.CodeValidationFailed, "create api key")
+		return nil, "", apperrors.Wrap(err, apperrors.CodeValidationFailed, "create api key")
 	}
 
 	if err := s.store.Create(ctx, key); err != nil {
-		return nil, "", errors.Wrap(err, errors.CodeDatabaseError, "store api key")
+		return nil, "", apperrors.Wrap(err, apperrors.CodeDatabaseError, "store api key")
 	}
 
 	return key, rawKey, nil
@@ -78,7 +79,7 @@ func (s *Service) CreateAPIKey(ctx context.Context, customerID, name, prefix str
 func (s *Service) ListAPIKeys(ctx context.Context, customerID string) ([]*apikey.APIKey, error) {
 	keys, err := s.store.ListByCustomer(ctx, customerID)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "list api keys")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "list api keys")
 	}
 	return keys, nil
 }
@@ -86,11 +87,14 @@ func (s *Service) ListAPIKeys(ctx context.Context, customerID string) ([]*apikey
 func (s *Service) RevokeAPIKey(ctx context.Context, keyID string) error {
 	key, err := s.store.GetByID(ctx, keyID)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "get api key")
+		if apperrors.IsCode(err, apperrors.CodeNotFound) {
+			return apperrors.Wrap(err, apperrors.CodeNotFound, "get api key")
+		}
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "get api key")
 	}
 	key.Revoke()
 	if err := s.store.Update(ctx, key); err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "revoke api key")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "revoke api key")
 	}
 	return nil
 }

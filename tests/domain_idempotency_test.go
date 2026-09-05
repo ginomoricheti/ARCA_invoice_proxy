@@ -74,18 +74,33 @@ func TestIdempotencyRecord_CheckConflict(t *testing.T) {
 	requestBody := []byte(`{"key": "value"}`)
 	record, _ := idempotency.NewIdempotencyRecord("test-key", requestBody, time.Hour)
 
-	// Same payload should not conflict
+	// Same payload while processing should report still processing
+	err := record.CheckConflict(requestBody)
+	if err != idempotency.ErrProcessing {
+		t.Errorf("same payload while processing should return ErrProcessing, got %v", err)
+	}
+
+	// Different payload should conflict (regardless of status)
+	differentBody := []byte(`{"key": "different"}`)
+	err = record.CheckConflict(differentBody)
+	if err != idempotency.ErrIdempotencyConflict {
+		t.Errorf("expected ErrIdempotencyConflict, got %v", err)
+	}
+}
+
+func TestIdempotencyRecord_CheckConflict_Completed(t *testing.T) {
+	requestBody := []byte(`{"key": "value"}`)
+	record, _ := idempotency.NewIdempotencyRecord("test-key", requestBody, time.Hour)
+	record.Complete([]byte(`{"result": "ok"}`))
+
+	// Same payload after completion should not conflict
 	err := record.CheckConflict(requestBody)
 	if err != nil {
-		t.Errorf("same payload should not conflict: %v", err)
+		t.Errorf("same payload after completion should not conflict: %v", err)
 	}
 
 	// Different payload should conflict
-	differentBody := []byte(`{"key": "different"}`)
-	err = record.CheckConflict(differentBody)
-	if err == nil {
-		t.Error("different payload should conflict")
-	}
+	err = record.CheckConflict([]byte(`{"key": "different"}`))
 	if err != idempotency.ErrIdempotencyConflict {
 		t.Errorf("expected ErrIdempotencyConflict, got %v", err)
 	}

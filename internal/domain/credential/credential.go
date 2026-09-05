@@ -39,15 +39,15 @@ func (e Environment) Valid() bool {
 }
 
 type ARCACredential struct {
-	ID           string
-	CustomerID   string
-	Environment  Environment
-	CUIT         string
-	CertPEM      []byte
-	KeyPEM       []byte
-	ExpiresAt    time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID          string
+	CustomerID  string
+	Environment Environment
+	CUIT        string
+	CertPEM     []byte
+	KeyPEM      []byte
+	ExpiresAt   time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func NewARCACredential(
@@ -120,18 +120,18 @@ type ARCAClient interface {
 }
 
 type VoucherRequest struct {
-	CUIT            string
-	InvoiceType     string
-	PointOfSale     int
-	ConceptType     int
-	DocType         int
-	DocNumber       string
-	ServiceFrom     string
-	ServiceTo       string
-	ExpirationDate  string
-	Items           []VoucherItem
-	CurrencyID      string
-	CurrencyRate    float64
+	CUIT           string
+	InvoiceType    string
+	PointOfSale    int
+	ConceptType    int
+	DocType        int
+	DocNumber      string
+	ServiceFrom    string
+	ServiceTo      string
+	ExpirationDate string
+	Items          []VoucherItem
+	CurrencyID     string
+	CurrencyRate   float64
 }
 
 type VoucherItem struct {
@@ -143,10 +143,10 @@ type VoucherItem struct {
 }
 
 type VoucherTax struct {
-	TaxID    int
-	Base     float64
-	Amount   float64
-	TaxRate  float64
+	TaxID   int
+	Base    float64
+	Amount  float64
+	TaxRate float64
 }
 
 type VoucherResponse struct {

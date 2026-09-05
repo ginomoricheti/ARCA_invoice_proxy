@@ -29,16 +29,16 @@ type DatabaseConfig struct {
 }
 
 type ARCAConfig struct {
-	Environment    string
-	WSAAURL        string
-	WSFEURL        string
+	Environment     string
+	WSAAURL         string
+	WSFEURL         string
 	CertificatePath string
-	KeyPath        string
+	KeyPath         string
 }
 
 type AuthConfig struct {
-	APIKeyPepper    string
-	IdempotencyTTL  time.Duration
+	APIKeyPepper   string
+	IdempotencyTTL time.Duration
 }
 
 type LoggingConfig struct {

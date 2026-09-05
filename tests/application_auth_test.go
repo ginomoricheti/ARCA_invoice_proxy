@@ -65,9 +65,9 @@ func TestAuthService_ValidateAPIKey(t *testing.T) {
 	store.keys[key.ID] = key
 
 	tests := []struct {
-		name       string
-		rawKey     string
-		shouldPass bool
+		name         string
+		rawKey       string
+		shouldPass   bool
 		expectedCode errors.ErrorCode
 	}{
 		{"valid key", rawKey, true, ""},

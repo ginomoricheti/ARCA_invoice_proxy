@@ -6,12 +6,12 @@ import (
 )
 
 var (
-	ErrInvalidCUIT       = errors.New("invalid CUIT")
-	ErrInvalidName       = errors.New("invalid name")
-	ErrInvalidEmail      = errors.New("invalid email")
-	ErrInvalidAddress    = errors.New("invalid address")
-	ErrInvalidIVA        = errors.New("invalid IVA condition")
-	ErrInvalidCountry    = errors.New("invalid country code")
+	ErrInvalidCUIT    = errors.New("invalid CUIT")
+	ErrInvalidName    = errors.New("invalid name")
+	ErrInvalidEmail   = errors.New("invalid email")
+	ErrInvalidAddress = errors.New("invalid address")
+	ErrInvalidIVA     = errors.New("invalid IVA condition")
+	ErrInvalidCountry = errors.New("invalid country code")
 )
 
 var cuitRegex = regexp.MustCompile(`^\d{11}$`)
@@ -19,11 +19,11 @@ var cuitRegex = regexp.MustCompile(`^\d{11}$`)
 type IVACondition string
 
 const (
-	IVAConditionRI    IVACondition = "RI"
-	IVAConditionMT    IVACondition = "MT"
-	IVAConditionEX    IVACondition = "EX"
-	IVAConditionCF    IVACondition = "CF"
-	IVAConditionNC    IVACondition = "NC"
+	IVAConditionRI IVACondition = "RI"
+	IVAConditionMT IVACondition = "MT"
+	IVAConditionEX IVACondition = "EX"
+	IVAConditionCF IVACondition = "CF"
+	IVAConditionNC IVACondition = "NC"
 )
 
 func ParseIVACondition(s string) (IVACondition, error) {

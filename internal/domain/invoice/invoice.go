@@ -24,7 +24,8 @@ func ParseInvoiceType(s string) (InvoiceType, error) {
 	case "A":
 		return InvoiceTypeA, nil
 	case "B":
-		return InvoiceTypeB, nil	case "C":
+		return InvoiceTypeB, nil
+	case "C":
 		return InvoiceTypeC, nil
 	default:
 		return "", ErrInvalidInvoiceType
@@ -75,21 +76,29 @@ const (
 	InvoiceStatusCancelled InvoiceStatus = "cancelled"
 )
 
+func (s InvoiceStatus) String() string {
+	return string(s)
+}
+
+func (s InvoiceStatus) Valid() bool {
+	return s == InvoiceStatusPending || s == InvoiceStatusIssued || s == InvoiceStatusRejected || s == InvoiceStatusCancelled
+}
+
 type Invoice struct {
-	ID              string
-	CustomerID      string
-	Type            InvoiceType
-	PointOfSale     int
-	Items           []InvoiceItem
-	Status          InvoiceStatus
-	SubtotalCents   int64
-	TaxCents        int64
-	TotalCents      int64
-	ARCAResponse    *ARCAResponse
-	IdempotencyKey  string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	IssuedAt        *time.Time
+	ID             string
+	CustomerID     string
+	Type           InvoiceType
+	PointOfSale    int
+	Items          []InvoiceItem
+	Status         InvoiceStatus
+	SubtotalCents  int64
+	TaxCents       int64
+	TotalCents     int64
+	ARCAResponse   *ARCAResponse
+	IdempotencyKey string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	IssuedAt       *time.Time
 }
 
 type ARCAResponse struct {

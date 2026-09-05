@@ -146,11 +146,11 @@ func TestInvoice_Creation(t *testing.T) {
 
 func TestInvoice_Creation_Errors(t *testing.T) {
 	tests := []struct {
-		name     string
-		items    []invoice.InvoiceItem
+		name        string
+		items       []invoice.InvoiceItem
 		pointOfSale int
-		invType  invoice.InvoiceType
-		hasError bool
+		invType     invoice.InvoiceType
+		hasError    bool
 	}{
 		{"empty items", []invoice.InvoiceItem{}, 1, invoice.InvoiceTypeC, true},
 		{"zero point of sale", []invoice.InvoiceItem{{Description: "A", Quantity: 1, UnitPriceCents: 100}}, 0, invoice.InvoiceTypeC, true},

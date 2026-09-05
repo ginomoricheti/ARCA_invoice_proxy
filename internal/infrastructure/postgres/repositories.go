@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,7 +14,7 @@ import (
 	"arca-invoice-proxy/internal/domain/apikey"
 	"arca-invoice-proxy/internal/domain/credential"
 	"arca-invoice-proxy/internal/domain/customer"
-	"arca-invoice-proxy/internal/domain/errors"
+	apperrors "arca-invoice-proxy/internal/domain/errors"
 	"arca-invoice-proxy/internal/domain/idempotency"
 	"arca-invoice-proxy/internal/domain/invoice"
 )
@@ -37,7 +36,7 @@ func (r *UserRepository) Create(ctx context.Context, c *customer.Customer) error
 	now := time.Now().UTC()
 	_, err := r.pool.Exec(ctx, query, id, c.CUIT, c.Name, c.Email, c.Address, c.IVACondition.String(), c.CountryCode, now, now)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "create user")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create user")
 	}
 	c.ID = id
 	c.CreatedAt = now.Format(time.RFC3339)
@@ -57,9 +56,9 @@ func (r *UserRepository) GetByCUIT(ctx context.Context, cuit string) (*customer.
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "user not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "user not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get user by cuit")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get user by cuit")
 	}
 	c.IVACondition = customer.IVACondition(ivaCondition)
 	return &c, nil
@@ -77,9 +76,9 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*customer.Cust
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "user not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "user not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get user by id")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get user by id")
 	}
 	c.IVACondition = customer.IVACondition(ivaCondition)
 	return &c, nil
@@ -102,7 +101,7 @@ func (r *APIKeyRepository) Create(ctx context.Context, k *apikey.APIKey) error {
 		k.ID, k.CustomerID, k.Name, k.Prefix, k.Hash, k.LastFour, k.Scopes, k.ExpiresAt, k.RevokedAt, k.CreatedAt, k.UpdatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "create api key")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create api key")
 	}
 	return nil
 }
@@ -118,9 +117,9 @@ func (r *APIKeyRepository) GetByPrefixAndSuffix(ctx context.Context, prefix, suf
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "api key not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "api key not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get api key")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get api key")
 	}
 	return &k, nil
 }
@@ -136,9 +135,9 @@ func (r *APIKeyRepository) GetByID(ctx context.Context, id string) (*apikey.APIK
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "api key not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "api key not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get api key by id")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get api key by id")
 	}
 	return &k, nil
 }
@@ -150,7 +149,7 @@ func (r *APIKeyRepository) ListByCustomer(ctx context.Context, customerID string
 	`
 	rows, err := r.pool.Query(ctx, query, customerID)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "list api keys")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "list api keys")
 	}
 	defer rows.Close()
 
@@ -158,7 +157,7 @@ func (r *APIKeyRepository) ListByCustomer(ctx context.Context, customerID string
 	for rows.Next() {
 		var k apikey.APIKey
 		if err := rows.Scan(&k.ID, &k.CustomerID, &k.Name, &k.Prefix, &k.Hash, &k.LastFour, &k.Scopes, &k.ExpiresAt, &k.RevokedAt, &k.CreatedAt, &k.UpdatedAt); err != nil {
-			return nil, errors.Wrap(err, errors.CodeDatabaseError, "scan api key")
+			return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "scan api key")
 		}
 		keys = append(keys, &k)
 	}
@@ -173,7 +172,7 @@ func (r *APIKeyRepository) Update(ctx context.Context, k *apikey.APIKey) error {
 	k.UpdatedAt = time.Now().UTC()
 	_, err := r.pool.Exec(ctx, query, k.ID, k.Name, k.Scopes, k.ExpiresAt, k.RevokedAt, k.UpdatedAt)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "update api key")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "update api key")
 	}
 	return nil
 }
@@ -195,7 +194,7 @@ func (r *ARCACredentialRepository) Create(ctx context.Context, c *credential.ARC
 		c.ID, c.CustomerID, c.Environment.String(), c.CUIT, c.CertPEM, c.KeyPEM, c.ExpiresAt, c.CreatedAt, c.UpdatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "create arca credential")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create arca credential")
 	}
 	return nil
 }
@@ -212,9 +211,9 @@ func (r *ARCACredentialRepository) GetByCustomerAndEnvironment(ctx context.Conte
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "arca credential not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "arca credential not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get arca credential")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get arca credential")
 	}
 	c.Environment = credential.Environment(envStr)
 	return &c, nil
@@ -232,9 +231,9 @@ func (r *ARCACredentialRepository) GetByID(ctx context.Context, id string) (*cre
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "arca credential not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "arca credential not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get arca credential by id")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get arca credential by id")
 	}
 	c.Environment = credential.Environment(envStr)
 	return &c, nil
@@ -251,7 +250,7 @@ func NewInvoiceRepository(pool *pgxpool.Pool) *InvoiceRepository {
 func (r *InvoiceRepository) Create(ctx context.Context, inv *invoice.Invoice, items []invoice.InvoiceItem) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "begin transaction")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "begin transaction")
 	}
 	defer tx.Rollback(ctx)
 
@@ -264,7 +263,7 @@ func (r *InvoiceRepository) Create(ctx context.Context, inv *invoice.Invoice, it
 		inv.SubtotalCents, inv.TaxCents, inv.TotalCents, inv.IdempotencyKey, inv.CreatedAt, inv.UpdatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "create invoice")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create invoice")
 	}
 
 	itemQuery := `
@@ -275,7 +274,7 @@ func (r *InvoiceRepository) Create(ctx context.Context, inv *invoice.Invoice, it
 		itemID := uuid.New().String()
 		_, err = tx.Exec(ctx, itemQuery, itemID, inv.ID, item.Description, item.Quantity, item.UnitPriceCents, item.TotalCents(), time.Now().UTC())
 		if err != nil {
-			return errors.Wrap(err, errors.CodeDatabaseError, "create invoice item")
+			return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create invoice item")
 		}
 	}
 
@@ -304,9 +303,9 @@ func (r *InvoiceRepository) GetByID(ctx context.Context, id string) (*invoice.In
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "invoice not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "invoice not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get invoice")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get invoice")
 	}
 
 	inv.Type = invoice.InvoiceType(invType)
@@ -359,9 +358,9 @@ func (r *InvoiceRepository) GetByIdempotencyKey(ctx context.Context, userID, key
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeNotFound, "invoice not found")
+			return nil, apperrors.New(apperrors.CodeNotFound, "invoice not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get invoice by idempotency key")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get invoice by idempotency key")
 	}
 
 	inv.Type = invoice.InvoiceType(invType)
@@ -415,7 +414,7 @@ func (r *InvoiceRepository) Update(ctx context.Context, inv *invoice.Invoice) er
 		inv.ARCAResponse.Result, arcaObservations, issuedAt, inv.UpdatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "update invoice")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "update invoice")
 	}
 	return nil
 }
@@ -426,7 +425,7 @@ func (r *InvoiceRepository) getItems(ctx context.Context, invoiceID string) ([]i
 	`
 	rows, err := r.pool.Query(ctx, query, invoiceID)
 	if err != nil {
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get invoice items")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get invoice items")
 	}
 	defer rows.Close()
 
@@ -434,7 +433,7 @@ func (r *InvoiceRepository) getItems(ctx context.Context, invoiceID string) ([]i
 	for rows.Next() {
 		var item invoice.InvoiceItem
 		if err := rows.Scan(&item.Description, &item.Quantity, &item.UnitPriceCents); err != nil {
-			return nil, errors.Wrap(err, errors.CodeDatabaseError, "scan invoice item")
+			return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "scan invoice item")
 		}
 		items = append(items, item)
 	}
@@ -463,7 +462,7 @@ func (r *IdempotencyRepository) Create(ctx context.Context, record *idempotency.
 		record.Key, record.RequestHash, record.Status.String(), record.CreatedAt, record.UpdatedAt, record.ExpiresAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "create idempotency record")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "create idempotency record")
 	}
 	return nil
 }
@@ -484,9 +483,9 @@ func (r *IdempotencyRepository) Get(ctx context.Context, key string) (*idempoten
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, errors.New(errors.CodeIdempotencyNotFound, "idempotency key not found")
+			return nil, apperrors.New(apperrors.CodeIdempotencyNotFound, "idempotency key not found")
 		}
-		return nil, errors.Wrap(err, errors.CodeDatabaseError, "get idempotency record")
+		return nil, apperrors.Wrap(err, apperrors.CodeDatabaseError, "get idempotency record")
 	}
 
 	record.Status = idempotency.IdempotencyStatus(status)
@@ -508,7 +507,7 @@ func (r *IdempotencyRepository) Update(ctx context.Context, record *idempotency.
 		record.Key, record.Status.String(), record.Response, record.Error, record.UpdatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, errors.CodeDatabaseError, "update idempotency record")
+		return apperrors.Wrap(err, apperrors.CodeDatabaseError, "update idempotency record")
 	}
 	return nil
 }

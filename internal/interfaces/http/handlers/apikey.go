@@ -3,8 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"time"
 
 	"arca-invoice-proxy/internal/application/authentication"
 	"arca-invoice-proxy/internal/interfaces/http/dto"
@@ -32,15 +30,20 @@ func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var expiresAt *int64
-	if req.ExpiresAt != nil {
-		expiresAt = req.ExpiresAt
-	}
-
-	key, rawKey, err := h.service.CreateAPIKey(r.Context(), userID, req.Name, req.Prefix, req.Scopes, expiresAt)
+	key, rawKey, err := h.service.CreateAPIKey(r.Context(), userID, req.Name, req.Prefix, req.Scopes, req.ExpiresAt)
 	if err != nil {
 		writeError(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	var expiresAt, revokedAt *int64
+	if key.ExpiresAt != nil {
+		t := key.ExpiresAt.Unix()
+		expiresAt = &t
+	}
+	if key.RevokedAt != nil {
+		t := key.RevokedAt.Unix()
+		revokedAt = &t
 	}
 
 	resp := dto.APIKeyResponse{
@@ -49,8 +52,8 @@ func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		Prefix:    key.Prefix,
 		LastFour:  key.LastFour,
 		Scopes:    key.Scopes,
-		ExpiresAt: key.ExpiresAt,
-		RevokedAt: key.RevokedAt,
+		ExpiresAt: expiresAt,
+		RevokedAt: revokedAt,
 		CreatedAt: key.CreatedAt.Unix(),
 	}
 
@@ -121,21 +124,4 @@ func (h *APIKeyHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func writeError(w http.ResponseWriter, message string, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(dto.ErrorResponse{
-		Error: message,
-		Code:  "error",
-	})
-}
-
-func parseTime(t *int64) *time.Time {
-	if t == nil {
-		return nil
-	}
-	parsed := time.Unix(*t, 0).UTC()
-	return &parsed
 }

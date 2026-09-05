@@ -8,18 +8,18 @@ import (
 
 func TestCustomer_New(t *testing.T) {
 	tests := []struct {
-		name          string
-		cuit          string
-		name          string
-		email         string
-		address       string
-		ivaCondition  customer.IVACondition
-		countryCode   string
-		hasError      bool
+		caseName     string
+		cuit         string
+		name         string
+		email        string
+		address      string
+		ivaCondition customer.IVACondition
+		countryCode  string
+		hasError     bool
 	}{
 		{
-			name:         "valid RI",
-			cuit:         "20123456789",
+			caseName:     "valid RI",
+			cuit:         "20123456786",
 			name:         "Test Company",
 			email:        "test@example.com",
 			address:      "Av. Corrientes 1234",
@@ -28,8 +28,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     false,
 		},
 		{
-			name:         "valid MT",
-			cuit:         "27123456785",
+			caseName:     "valid MT",
+			cuit:         "27123456780",
 			name:         "Monotributista",
 			email:        "mono@example.com",
 			address:      "Calle Falsa 123",
@@ -38,7 +38,7 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     false,
 		},
 		{
-			name:         "invalid CUIT format",
+			caseName:     "invalid CUIT format",
 			cuit:         "123456789",
 			name:         "Test",
 			email:        "test@example.com",
@@ -48,7 +48,7 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "invalid CUIT checksum",
+			caseName:     "invalid CUIT checksum",
 			cuit:         "20123456780",
 			name:         "Test",
 			email:        "test@example.com",
@@ -58,8 +58,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "empty name",
-			cuit:         "20123456789",
+			caseName:     "empty name",
+			cuit:         "20123456786",
 			name:         "",
 			email:        "test@example.com",
 			address:      "Address",
@@ -68,8 +68,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "invalid email",
-			cuit:         "20123456789",
+			caseName:     "invalid email",
+			cuit:         "20123456786",
 			name:         "Test",
 			email:        "invalid-email",
 			address:      "Address",
@@ -78,8 +78,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "empty address",
-			cuit:         "20123456789",
+			caseName:     "empty address",
+			cuit:         "20123456786",
 			name:         "Test",
 			email:        "test@example.com",
 			address:      "",
@@ -88,8 +88,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "invalid IVA",
-			cuit:         "20123456789",
+			caseName:     "invalid IVA",
+			cuit:         "20123456786",
 			name:         "Test",
 			email:        "test@example.com",
 			address:      "Address",
@@ -98,8 +98,8 @@ func TestCustomer_New(t *testing.T) {
 			hasError:     true,
 		},
 		{
-			name:         "invalid country code",
-			cuit:         "20123456789",
+			caseName:     "invalid country code",
+			cuit:         "20123456786",
 			name:         "Test",
 			email:        "test@example.com",
 			address:      "Address",
@@ -110,7 +110,7 @@ func TestCustomer_New(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.caseName, func(t *testing.T) {
 			cust, err := customer.NewCustomer(tt.cuit, tt.name, tt.email, tt.address, tt.ivaCondition, tt.countryCode)
 			if tt.hasError {
 				if err == nil {

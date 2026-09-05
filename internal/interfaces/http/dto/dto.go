@@ -7,11 +7,11 @@ import (
 )
 
 type IssueInvoiceRequest struct {
-	CUIT           string                  `json:"cuit" validate:"required,len=11"`
-	InvoiceType    string                  `json:"tipo_factura" validate:"required,oneof=A B C"`
-	PointOfSale    int                     `json:"punto_venta" validate:"required,min=1"`
+	CUIT           string                    `json:"cuit" validate:"required,len=11"`
+	InvoiceType    string                    `json:"tipo_factura" validate:"required,oneof=A B C"`
+	PointOfSale    int                       `json:"punto_venta" validate:"required,min=1"`
 	Items          []IssueInvoiceItemRequest `json:"items" validate:"required,min=1,dive"`
-	IdempotencyKey string                  `json:"-" header:"Idempotency-Key"`
+	IdempotencyKey string                    `json:"-" header:"Idempotency-Key"`
 }
 
 type IssueInvoiceItemRequest struct {
@@ -21,20 +21,20 @@ type IssueInvoiceItemRequest struct {
 }
 
 type IssueInvoiceResponse struct {
-	InvoiceID      string                     `json:"invoice_id"`
-	Status         string                     `json:"status"`
-	InvoiceType    string                     `json:"tipo_factura"`
-	PointOfSale    int                        `json:"punto_venta"`
-	CAE            string                     `json:"cae,omitempty"`
-	CAEExpiresAt   *time.Time                 `json:"cae_expires_at,omitempty"`
-	VoucherNumber  int64                      `json:"numero_comprobante,omitempty"`
-	VoucherType    int                        `json:"tipo_comprobante,omitempty"`
-	SubtotalCents  int64                      `json:"subtotal_cents"`
-	TaxCents       int64                      `json:"tax_cents"`
-	TotalCents     int64                      `json:"total_cents"`
-	Items          []InvoiceItemResponse      `json:"items"`
-	IssuedAt       *time.Time                 `json:"issued_at,omitempty"`
-	CreatedAt      time.Time                  `json:"created_at"`
+	InvoiceID     string                `json:"invoice_id"`
+	Status        string                `json:"status"`
+	InvoiceType   string                `json:"tipo_factura"`
+	PointOfSale   int                   `json:"punto_venta"`
+	CAE           string                `json:"cae,omitempty"`
+	CAEExpiresAt  *time.Time            `json:"cae_expires_at,omitempty"`
+	VoucherNumber int64                 `json:"numero_comprobante,omitempty"`
+	VoucherType   int                   `json:"tipo_comprobante,omitempty"`
+	SubtotalCents int64                 `json:"subtotal_cents"`
+	TaxCents      int64                 `json:"tax_cents"`
+	TotalCents    int64                 `json:"total_cents"`
+	Items         []InvoiceItemResponse `json:"items"`
+	IssuedAt      *time.Time            `json:"issued_at,omitempty"`
+	CreatedAt     time.Time             `json:"created_at"`
 }
 
 type InvoiceItemResponse struct {

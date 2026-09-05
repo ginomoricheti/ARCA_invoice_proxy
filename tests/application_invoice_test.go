@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"arca-invoice-proxy/internal/application/invoice"
+	appinvoice "arca-invoice-proxy/internal/application/invoice"
 	"arca-invoice-proxy/internal/domain/credential"
 	"arca-invoice-proxy/internal/domain/customer"
 	"arca-invoice-proxy/internal/domain/errors"
@@ -117,29 +117,29 @@ func (m *mockARCAClient) CreateVoucher(ctx context.Context, request credential.V
 
 func TestIssueInvoice_Success(t *testing.T) {
 	ctx := context.Background()
-	
+
 	invoiceRepo := newMockInvoiceRepo()
 	userRepo := newMockUserRepo()
 	credentialRepo := newMockCredentialRepo()
 	arcaClient := newMockARCAClient()
 
 	// Setup user
-	user, _ := customer.NewCustomer("20123456789", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
+	user, _ := customer.NewCustomer("20123456786", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
 	user.ID = "cust_123"
 	userRepo.AddUser(user)
 
 	// Setup credential
-	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456789", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
+	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456786", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
 	credentialRepo.AddCredential(cred)
 
-	svc := invoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
+	svc := appinvoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
 
-	input := invoice.IssueInvoiceInput{
-		CustomerID:   "cust_123",
-		InvoiceType:  "C",
-		PointOfSale:  1,
+	input := appinvoice.IssueInvoiceInput{
+		CustomerID:     "cust_123",
+		InvoiceType:    "C",
+		PointOfSale:    1,
 		IdempotencyKey: "idem_123",
-		Items: []invoice.InvoiceItemInput{
+		Items: []appinvoice.InvoiceItemInput{
 			{Description: "Service", Quantity: 1, UnitPriceCents: 100000},
 		},
 	}
@@ -168,27 +168,27 @@ func TestIssueInvoice_Success(t *testing.T) {
 
 func TestIssueInvoice_Idempotency(t *testing.T) {
 	ctx := context.Background()
-	
+
 	invoiceRepo := newMockInvoiceRepo()
 	userRepo := newMockUserRepo()
 	credentialRepo := newMockCredentialRepo()
 	arcaClient := newMockARCAClient()
 
-	user, _ := customer.NewCustomer("20123456789", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
+	user, _ := customer.NewCustomer("20123456786", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
 	user.ID = "cust_123"
 	userRepo.AddUser(user)
 
-	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456789", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
+	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456786", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
 	credentialRepo.AddCredential(cred)
 
-	svc := invoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
+	svc := appinvoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
 
-	input := invoice.IssueInvoiceInput{
-		CustomerID:   "cust_123",
-		InvoiceType:  "C",
-		PointOfSale:  1,
+	input := appinvoice.IssueInvoiceInput{
+		CustomerID:     "cust_123",
+		InvoiceType:    "C",
+		PointOfSale:    1,
 		IdempotencyKey: "idem_123",
-		Items: []invoice.InvoiceItemInput{
+		Items: []appinvoice.InvoiceItemInput{
 			{Description: "Service", Quantity: 1, UnitPriceCents: 100000},
 		},
 	}
@@ -213,26 +213,26 @@ func TestIssueInvoice_Idempotency(t *testing.T) {
 
 func TestIssueInvoice_InvalidType(t *testing.T) {
 	ctx := context.Background()
-	
+
 	invoiceRepo := newMockInvoiceRepo()
 	userRepo := newMockUserRepo()
 	credentialRepo := newMockCredentialRepo()
 	arcaClient := newMockARCAClient()
 
-	user, _ := customer.NewCustomer("20123456789", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
+	user, _ := customer.NewCustomer("20123456786", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
 	user.ID = "cust_123"
 	userRepo.AddUser(user)
 
-	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456789", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
+	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456786", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
 	credentialRepo.AddCredential(cred)
 
-	svc := invoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
+	svc := appinvoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
 
-	input := invoice.IssueInvoiceInput{
-		CustomerID:   "cust_123",
-		InvoiceType:  "X",
-		PointOfSale:  1,
-		Items: []invoice.InvoiceItemInput{
+	input := appinvoice.IssueInvoiceInput{
+		CustomerID:  "cust_123",
+		InvoiceType: "X",
+		PointOfSale: 1,
+		Items: []appinvoice.InvoiceItemInput{
 			{Description: "Service", Quantity: 1, UnitPriceCents: 100000},
 		},
 	}
@@ -248,24 +248,24 @@ func TestIssueInvoice_InvalidType(t *testing.T) {
 
 func TestIssueInvoice_MissingCredential(t *testing.T) {
 	ctx := context.Background()
-	
+
 	invoiceRepo := newMockInvoiceRepo()
 	userRepo := newMockUserRepo()
 	credentialRepo := newMockCredentialRepo()
 	arcaClient := newMockARCAClient()
 
-	user, _ := customer.NewCustomer("20123456789", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
+	user, _ := customer.NewCustomer("20123456786", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
 	user.ID = "cust_123"
 	userRepo.AddUser(user)
 	// No credential added
 
-	svc := invoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
+	svc := appinvoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
 
-	input := invoice.IssueInvoiceInput{
-		CustomerID:   "cust_123",
-		InvoiceType:  "C",
-		PointOfSale:  1,
-		Items: []invoice.InvoiceItemInput{
+	input := appinvoice.IssueInvoiceInput{
+		CustomerID:  "cust_123",
+		InvoiceType: "C",
+		PointOfSale: 1,
+		Items: []appinvoice.InvoiceItemInput{
 			{Description: "Service", Quantity: 1, UnitPriceCents: 100000},
 		},
 	}
@@ -281,7 +281,7 @@ func TestIssueInvoice_MissingCredential(t *testing.T) {
 
 func TestIssueInvoice_ARCARejected(t *testing.T) {
 	ctx := context.Background()
-	
+
 	invoiceRepo := newMockInvoiceRepo()
 	userRepo := newMockUserRepo()
 	credentialRepo := newMockCredentialRepo()
@@ -295,20 +295,20 @@ func TestIssueInvoice_ARCARejected(t *testing.T) {
 		Observations:      []credential.VoucherObservation{{Code: 1001, Message: "CUIT no autorizado"}},
 	}
 
-	user, _ := customer.NewCustomer("20123456789", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
+	user, _ := customer.NewCustomer("20123456786", "Test Co", "test@example.com", "Address 123", customer.IVAConditionRI, "AR")
 	user.ID = "cust_123"
 	userRepo.AddUser(user)
 
-	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456789", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
+	cred, _ := credential.NewARCACredential("cust_123", credential.EnvironmentHomologation, "20123456786", []byte("cert"), []byte("key"), time.Now().Add(24*time.Hour))
 	credentialRepo.AddCredential(cred)
 
-	svc := invoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
+	svc := appinvoice.NewService(invoiceRepo, userRepo, credentialRepo, arcaClient, credential.EnvironmentHomologation)
 
-	input := invoice.IssueInvoiceInput{
-		CustomerID:   "cust_123",
-		InvoiceType:  "C",
-		PointOfSale:  1,
-		Items: []invoice.InvoiceItemInput{
+	input := appinvoice.IssueInvoiceInput{
+		CustomerID:  "cust_123",
+		InvoiceType: "C",
+		PointOfSale: 1,
+		Items: []appinvoice.InvoiceItemInput{
 			{Description: "Service", Quantity: 1, UnitPriceCents: 100000},
 		},
 	}

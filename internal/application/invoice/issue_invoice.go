@@ -2,7 +2,6 @@ package invoice
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"arca-invoice-proxy/internal/domain/credential"
@@ -32,10 +31,10 @@ type ARCAClient interface {
 }
 
 type IssueInvoiceInput struct {
-	CustomerID   string
-	InvoiceType  string
-	PointOfSale  int
-	Items        []InvoiceItemInput
+	CustomerID     string
+	InvoiceType    string
+	PointOfSale    int
+	Items          []InvoiceItemInput
 	IdempotencyKey string
 }
 
@@ -50,11 +49,11 @@ type IssueInvoiceOutput struct {
 }
 
 type Service struct {
-	invoiceRepo       InvoiceRepository
-	userRepo          UserRepository
-	credentialRepo    ARCACredentialRepository
-	arcaClient        ARCAClient
-	environment       credential.Environment
+	invoiceRepo    InvoiceRepository
+	userRepo       UserRepository
+	credentialRepo ARCACredentialRepository
+	arcaClient     ARCAClient
+	environment    credential.Environment
 }
 
 func NewService(
@@ -183,18 +182,18 @@ func (s *Service) buildVoucherRequest(cred *credential.ARCACredential, user *cus
 	}
 
 	return credential.VoucherRequest{
-		CUIT:            cred.CUIT,
-		InvoiceType:     voucherType,
-		PointOfSale:     inv.PointOfSale,
-		ConceptType:     1,
-		DocType:         docType,
-		DocNumber:       docNumber,
-		ServiceFrom:     time.Now().UTC().Format("20060102"),
-		ServiceTo:       time.Now().UTC().Format("20060102"),
-		ExpirationDate:  time.Now().UTC().AddDate(0, 0, 10).Format("20060102"),
-		Items:           items,
-		CurrencyID:      "PES",
-		CurrencyRate:    1.0,
+		CUIT:           cred.CUIT,
+		InvoiceType:    voucherType,
+		PointOfSale:    inv.PointOfSale,
+		ConceptType:    1,
+		DocType:        docType,
+		DocNumber:      docNumber,
+		ServiceFrom:    time.Now().UTC().Format("20060102"),
+		ServiceTo:      time.Now().UTC().Format("20060102"),
+		ExpirationDate: time.Now().UTC().AddDate(0, 0, 10).Format("20060102"),
+		Items:          items,
+		CurrencyID:     "PES",
+		CurrencyRate:   1.0,
 	}
 }
 

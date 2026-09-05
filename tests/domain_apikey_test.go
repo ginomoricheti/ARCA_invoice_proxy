@@ -95,7 +95,7 @@ func TestAPIKey_Creation(t *testing.T) {
 	if rawKey == "" {
 		t.Error("raw key should not be empty")
 	}
-	if !key.Validate(rawKey, "pepper") {
+	if err := key.Validate(rawKey, "pepper"); err != nil {
 		t.Error("valid key should pass validation")
 	}
 }
@@ -167,10 +167,10 @@ func TestAPIKey_Expired(t *testing.T) {
 
 func TestAPIKey_Parse(t *testing.T) {
 	tests := []struct {
-		input     string
-		prefix    string
-		suffix    string
-		hasError  bool
+		input    string
+		prefix   string
+		suffix   string
+		hasError bool
 	}{
 		{"sk_live_REDACTED_KEY_FOR_TESTING_abcdef1234567890", apikey.PrefixLive, "REDACTED_KEY_FOR_TESTING_abcdef1234567890", false},
 		{"sk_test_REDACTED_KEY_FOR_TESTING_abcdef1234567890", apikey.PrefixTest, "REDACTED_KEY_FOR_TESTING_abcdef1234567890", false},

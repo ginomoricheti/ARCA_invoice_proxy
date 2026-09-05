@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"arca-invoice-proxy/internal/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewPool(ctx context.Context, cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {

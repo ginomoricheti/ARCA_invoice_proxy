@@ -14,9 +14,9 @@ import (
 type contextKey string
 
 const (
-	UserIDKey     contextKey = "user_id"
-	APIKeyIDKey   contextKey = "api_key_id"
-	RequestIDKey  contextKey = "request_id"
+	UserIDKey    contextKey = "user_id"
+	APIKeyIDKey  contextKey = "api_key_id"
+	RequestIDKey contextKey = "request_id"
 )
 
 func Authentication(authService *authentication.Service) func(http.Handler) http.Handler {

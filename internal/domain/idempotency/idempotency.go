@@ -77,12 +77,12 @@ func NewIdempotencyRecord(key string, requestBody []byte, ttl time.Duration) (*I
 }
 
 func (r *IdempotencyRecord) CheckConflict(requestBody []byte) error {
-	if r.Status == StatusProcessing {
-		return ErrProcessing
-	}
 	newHash := computeHash(requestBody)
 	if r.RequestHash != newHash {
 		return ErrIdempotencyConflict
+	}
+	if r.Status == StatusProcessing {
+		return ErrProcessing
 	}
 	return nil
 }

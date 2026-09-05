@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"arca-invoice-proxy/internal/application/authentication"
-	"arca-invoice-proxy/internal/application/idempotency"
 	"arca-invoice-proxy/internal/application/invoice"
 	"arca-invoice-proxy/internal/config"
 	"arca-invoice-proxy/internal/domain/credential"
@@ -35,10 +34,8 @@ func main() {
 	apiKeyRepo := postgres.NewAPIKeyRepository(pool)
 	credentialRepo := postgres.NewARCACredentialRepository(pool)
 	invoiceRepo := postgres.NewInvoiceRepository(pool)
-	idempotencyRepo := postgres.NewIdempotencyRepository(pool)
 
 	authService := authentication.NewService(apiKeyRepo, cfg.Auth.APIKeyPepper)
-	idempotencyService := idempotency.NewService(idempotencyRepo, cfg.Auth.IdempotencyTTL)
 
 	arcaClient := newMockARCAClient()
 	environment := credential.Environment(cfg.ARCA.Environment)

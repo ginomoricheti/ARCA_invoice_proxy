@@ -11,33 +11,33 @@ import (
 )
 
 var (
-	ErrInvalidAPIKey     = errors.New("invalid API key")
-	ErrKeyNotFound       = errors.New("API key not found")
-	ErrKeyRevoked        = errors.New("API key has been revoked")
-	ErrKeyExpired        = errors.New("API key has expired")
-	ErrInvalidPrefix     = errors.New("invalid API key prefix")
-	ErrInvalidFormat     = errors.New("invalid API key format")
+	ErrInvalidAPIKey = errors.New("invalid API key")
+	ErrKeyNotFound   = errors.New("API key not found")
+	ErrKeyRevoked    = errors.New("API key has been revoked")
+	ErrKeyExpired    = errors.New("API key has expired")
+	ErrInvalidPrefix = errors.New("invalid API key prefix")
+	ErrInvalidFormat = errors.New("invalid API key format")
 )
 
 const (
-	PrefixLive    = "sk_live_"
-	PrefixTest    = "sk_test_"
-	KeyLength     = 32
-	HashLength    = 32
+	PrefixLive = "sk_live_"
+	PrefixTest = "sk_test_"
+	KeyLength  = 32
+	HashLength = 32
 )
 
 type APIKey struct {
-	ID          string
-	CustomerID  string
-	Name        string
-	Prefix      string
-	Hash        string
-	LastFour    string
-	Scopes      []string
-	ExpiresAt   *time.Time
-	RevokedAt   *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID         string
+	CustomerID string
+	Name       string
+	Prefix     string
+	Hash       string
+	LastFour   string
+	Scopes     []string
+	ExpiresAt  *time.Time
+	RevokedAt  *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func GenerateAPIKey(prefix string) (string, string, error) {
@@ -142,9 +142,17 @@ func generateID() string {
 
 func randomString(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+	raw := make([]byte, n)
+	if _, err := rand.Read(raw); err != nil {
+		b := make([]byte, n)
+		for i := range b {
+			b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
+		}
+		return string(b)
+	}
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
+		b[i] = letters[int(raw[i])%len(letters)]
 	}
 	return string(b)
 }
