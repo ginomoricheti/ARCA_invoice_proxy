@@ -1,0 +1,597 @@
+openapi: 3.0.3
+info:
+  title: ARCA Invoice Proxy API
+  version: 1.0.0
+  description: |
+    API for electronic invoicing with ARCA (ex AFIP) in Argentina.
+    This API abstracts the complexity of ARCA's WSAA/WSFEv1 services.
+  contact:
+    name: ARCA Invoice Proxy
+    email: support@arca-invoice-proxy.example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.arca-invoice-proxy.example.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API
+      operationId: health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /ready:
+    get:
+      summary: Readiness check
+      description: Returns the readiness status of the API
+      operationId: ready
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+
+  /v1/facturar:
+    post:
+      summary: Issue an electronic invoice
+      description: |
+        Creates and issues an electronic invoice through ARCA.
+        Requires authentication via API Key and supports idempotency.
+      operationId: issueInvoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Unique key for idempotent requests. Same key with same payload returns cached result.
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueInvoiceRequest'
+            examples:
+              invoice_c:
+                summary: Invoice Type C (Consumidor Final)
+                value:
+                  cuit: "20123456789"
+                  tipo_factura: "C"
+                  punto_venta: 1
+                  items:
+                    - descripcion: "Servicio de desarrollo"
+                      cantidad: 1
+                      precio_unitario: 1000000
+              invoice_a:
+                summary: Invoice Type A (Responsable Inscripto)
+                value:
+                  cuit: "20123456789"
+                  tipo_factura: "A"
+                  punto_venta: 1
+                  items:
+                    - descripcion: "Servicio de consultor+¡a"
+                      cantidad: 10
+                      precio_unitario: 500000
+      responses:
+        '201':
+          description: Invoice created and issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueInvoiceResponse'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    invoice_id: "inv_20260104120000_abc12345"
+                    status: "issued"
+                    tipo_factura: "C"
+                    punto_venta: 1
+                    cae: "12345678901234"
+                    cae_expires_at: "2026-01-14T00:00:00Z"
+                    numero_comprobante: 1
+                    tipo_comprobante: 11
+                    subtotal_cents: 1000000
+                    tax_cents: 0
+                    total_cents: 1000000
+                    items:
+                      - descripcion: "Servicio de desarrollo"
+                        cantidad: 1
+                        precio_unitario: 1000000
+                        total_cents: 1000000
+                    issued_at: "2026-01-04T12:00:00Z"
+                    created_at: "2026-01-04T12:00:00Z"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_cuit:
+                  summary: Invalid CUIT
+                  value:
+                    error: "invalid_cuit: invalid CUIT"
+                    code: "invalid_cuit"
+                invalid_items:
+                  summary: Invalid items
+                  value:
+                    error: "validation_failed: invalid invoice item: quantity must be positive"
+                    code: "validation_failed"
+        '401':
+          description: Unauthorized - Invalid or missing API Key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_auth:
+                  summary: Missing authorization
+                  value:
+                    error: "invalid_api_key: authorization header required"
+                    code: "invalid_api_key"
+                invalid_key:
+                  summary: Invalid API key
+                  value:
+                    error: "invalid_api_key: invalid api key"
+                    code: "invalid_api_key"
+        '409':
+          description: Idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                conflict:
+                  summary: Same key, different payload
+                  value:
+                    error: "idempotency_conflict: idempotency key conflict: different payload"
+                    code: "idempotency_conflict"
+                processing:
+                  summary: Request still processing
+                  value:
+                    error: "idempotency_processing: request is still processing"
+                    code: "idempotency_processing"
+        '422':
+          description: ARCA rejected the invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                arca_rejected:
+                  summary: ARCA rejection
+                  value:
+                    error: "arca_rejected: arca rejected invoice"
+                    code: "arca_rejected"
+                    details:
+                      observations: "CUIT no autorizado para facturar"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                internal:
+                  summary: Internal error
+                  value:
+                    error: "internal_error: database error"
+                    code: "internal_error"
+        '503':
+          description: ARCA service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                arca_unavailable:
+                  summary: ARCA service down
+                  value:
+                    error: "arca_service_unavailable: arca service unavailable"
+                    code: "arca_service_unavailable"
+
+  /v1/api-keys:
+    post:
+      summary: Create a new API Key
+      description: Creates a new API key for the authenticated user
+      operationId: createAPIKey
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIKeyRequest'
+            examples:
+              live_key:
+                summary: Production API Key
+                value:
+                  name: "Production Integration"
+                  prefix: "sk_live_"
+                  scopes: ["invoices:write", "invoices:read"]
+                  expires_at: 1893456000
+              test_key:
+                summary: Test API Key
+                value:
+                  name: "Development Integration"
+                  prefix: "sk_test_"
+                  scopes: ["invoices:write"]
+      responses:
+        '201':
+          description: API Key created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIKeyCreateResponse'
+              examples:
+                success:
+                  summary: Created API key
+                  value:
+                    api_key: "<YOUR_API_KEY_HERE>"
+                    details:
+                      id: "key_20260104120000_abc12345"
+                      name: "Production Integration"
+                      prefix: "sk_live_"
+                      last_four: "7890"
+                      scopes: ["invoices:write", "invoices:read"]
+                      expires_at: 1893456000
+                      revoked_at: null
+                      created_at: 1704374400
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: List API Keys
+      description: Returns all API keys for the authenticated user
+      operationId: listAPIKeys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/APIKeyResponse'
+              examples:
+                success:
+                  summary: List of keys
+                  value:
+                    - id: "key_20260104120000_abc12345"
+                      name: "Production Integration"
+                      prefix: "sk_live_"
+                      last_four: "7890"
+                      scopes: ["invoices:write", "invoices:read"]
+                      expires_at: 1893456000
+                      revoked_at: null
+                      created_at: 1704374400
+                    - id: "key_20260104120000_def67890"
+                      name: "Development Integration"
+                      prefix: "sk_test_"
+                      last_four: "8901"
+                      scopes: ["invoices:write"]
+                      expires_at: null
+                      revoked_at: null
+                      created_at: 1704374500
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/api-keys/{id}:
+    delete:
+      summary: Revoke an API Key
+      description: Revokes an API key, making it invalid for future requests
+      operationId: revokeAPIKey
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: API Key ID
+      responses:
+        '204':
+          description: API Key revoked successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: API Key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+      description: |
+        API Key authentication. Format: `Bearer sk_live_xxxxx` or `Bearer sk_test_xxxxx`
+
+  schemas:
+    IssueInvoiceRequest:
+      type: object
+      required:
+        - cuit
+        - tipo_factura
+        - punto_venta
+        - items
+      properties:
+        cuit:
+          type: string
+          pattern: '^\d{11}$'
+          description: CUIT of the issuer (11 digits)
+          example: "20123456789"
+        tipo_factura:
+          type: string
+          enum: ["A", "B", "C"]
+          description: Type of invoice (A, B, or C)
+          example: "C"
+        punto_venta:
+          type: integer
+          minimum: 1
+          description: Point of sale number
+          example: 1
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/IssueInvoiceItemRequest'
+          description: Invoice items
+
+    IssueInvoiceItemRequest:
+      type: object
+      required:
+        - descripcion
+        - cantidad
+        - precio_unitario
+      properties:
+        descripcion:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Item description
+          example: "Servicio de desarrollo"
+        cantidad:
+          type: integer
+          minimum: 1
+          description: Quantity
+          example: 1
+        precio_unitario:
+          type: integer
+          minimum: 0
+          description: Unit price in cents (e.g., 100000 = $1000.00)
+          example: 1000000
+
+    IssueInvoiceResponse:
+      type: object
+      properties:
+        invoice_id:
+          type: string
+          description: Unique invoice identifier
+          example: "inv_20260104120000_abc12345"
+        status:
+          type: string
+          enum: ["pending", "issued", "rejected", "cancelled"]
+          description: Invoice status
+          example: "issued"
+        tipo_factura:
+          type: string
+          enum: ["A", "B", "C"]
+          description: Invoice type
+          example: "C"
+        punto_venta:
+          type: integer
+          description: Point of sale
+          example: 1
+        cae:
+          type: string
+          description: ARCA Authorization Code (CAE)
+          example: "12345678901234"
+        cae_expires_at:
+          type: string
+          format: date-time
+          description: CAE expiration date
+          example: "2026-01-14T00:00:00Z"
+        numero_comprobante:
+          type: integer
+          description: Voucher number assigned by ARCA
+          example: 1
+        tipo_comprobante:
+          type: integer
+          description: Voucher type code (11=Factura C, 1=Factura A, 6=Factura B)
+          example: 11
+        subtotal_cents:
+          type: integer
+          description: Subtotal in cents
+          example: 1000000
+        tax_cents:
+          type: integer
+          description: Tax amount in cents
+          example: 0
+        total_cents:
+          type: integer
+          description: Total amount in cents
+          example: 1000000
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceItemResponse'
+        issued_at:
+          type: string
+          format: date-time
+          description: Timestamp when invoice was issued
+          example: "2026-01-04T12:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when invoice was created
+          example: "2026-01-04T12:00:00Z"
+
+    InvoiceItemResponse:
+      type: object
+      properties:
+        descripcion:
+          type: string
+          example: "Servicio de desarrollo"
+        cantidad:
+          type: integer
+          example: 1
+        precio_unitario:
+          type: integer
+          example: 1000000
+        total_cents:
+          type: integer
+          example: 1000000
+
+    APIKeyRequest:
+      type: object
+      required:
+        - name
+        - prefix
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Descriptive name for the API key
+          example: "Production Integration"
+        prefix:
+          type: string
+          enum: ["sk_live_", "sk_test_"]
+          description: Key prefix (sk_live_ for production, sk_test_ for testing)
+          example: "sk_live_"
+        scopes:
+          type: array
+          items:
+            type: string
+          description: Permissions/scopes for the key
+          example: ["invoices:write", "invoices:read"]
+        expires_at:
+          type: integer
+          format: int64
+          description: Unix timestamp for expiration (optional)
+          example: 1893456000
+
+    APIKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "key_20260104120000_abc12345"
+        name:
+          type: string
+          example: "Production Integration"
+        prefix:
+          type: string
+          example: "sk_live_"
+        last_four:
+          type: string
+          example: "7890"
+        scopes:
+          type: array
+          items:
+            type: string
+          example: ["invoices:write", "invoices:read"]
+        expires_at:
+          type: integer
+          format: int64
+          nullable: true
+          example: 1893456000
+        revoked_at:
+          type: integer
+          format: int64
+          nullable: true
+          example: null
+        created_at:
+          type: integer
+          format: int64
+          example: 1704374400
+
+    APIKeyCreateResponse:
+      type: object
+      properties:
+        api_key:
+          type: string
+          description: The full API key (only returned once at creation)
+          example: "<YOUR_API_KEY>"
+        details:
+          $ref: '#/components/schemas/APIKeyResponse'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "invalid_api_key: invalid api key"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "invalid_api_key"
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional error details
+          example:
+            observations: "CUIT no autorizado para facturar"
